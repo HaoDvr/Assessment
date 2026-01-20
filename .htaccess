@@ -1,9 +1,18 @@
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    
-    # Si alguien pide la raíz, mándalo a public/
-    RewriteRule ^$ public/ [L]
-    
-    # Si piden cualquier otra cosa, mándalo a public/cosa
-    RewriteRule ^((?!public/).*)$ public/$1 [L]
-</IfModule>
+# 1. Directivas de Opciones
+# Deshabilita la navegación por directorios y la vista múltiple
+Options -Indexes -Multiviews
+
+# **IMPORTANTE: Las siguientes dos líneas evitan el problema**
+# No reescribir si la solicitud es un archivo que existe (-f = file)
+RewriteCond %{REQUEST_FILENAME} !-f
+# No reescribir si la solicitud es un directorio que existe (-d = directory)
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# 2. Configuración de Reescribir URLs (URL Rewriting)
+# Activa el motor de reescritura
+RewriteEngine On
+
+# Regla de Reescritura:
+# Captura cualquier ruta (letras, números, guiones, barras)
+# y lo envía a index.php como el parámetro 'url'
+RewriteRule ^(.*)$ index.php?url=$1 [L,QSA]

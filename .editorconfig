@@ -1,0 +1,24 @@
+# Indica que este es el archivo de configuración raíz
+root = true
+
+# Configuración para todos los archivos (*)
+[*]
+# 1. Forzar el salto de línea a estilo Linux (LF)
+end_of_line = lf
+
+# 2. Asegurar que el archivo termine con una línea en blanco (Buena práctica de Git)
+insert_final_newline = true
+
+# 3. Eliminar espacios en blanco accidentales al final de las líneas
+trim_trailing_whitespace = true
+
+# 4. Definir el juego de caracteres a UTF-8 (Para que no fallen los acentos en PHP)
+charset = utf-8
+
+#5. Configuración para lenguajes web modernos
+[*.{php,js,ts,jsx,tsx,html,css,scss,json}]
+indent_style = space
+indent_size = 4
+
+# 6. Definir el tamaño de la sangría (4 espacios es el estándar de PHP PSR)
+indent_size = 4
