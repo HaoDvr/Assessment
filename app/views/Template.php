@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 /*=============================================
 LOGICA PREVIA AL RENDERIZADO
 =============================================*/
-$tituloPagina = "Assestmen";
+$tituloPagina = "Assessment";
 $breadcrumbActivo = "Inicio";
 
 if (isset($_GET["url"])) {

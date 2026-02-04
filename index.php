@@ -15,6 +15,7 @@ require_once "app/controllers/UsuariosController.php";
 require_once "app/controllers/PreguntasController.php";
 require_once "app/controllers/RespuestasController.php";
 require_once "app/controllers/OpcionesRespuestasController.php";
+require_once "app/controllers/InicioController.php";
 
 
 
@@ -23,6 +24,7 @@ require_once "app/models/UsuariosModel.php";
 require_once "./app/models/PreguntasModel.php";
 require_once "./app/models/RespuestasModel.php";
 require_once "./app/models/OpcionesRespuestaModel.php";
+require_once "./app/models/InicioModel.php";
 
 
 //*Ocupo el Template controller

@@ -1,7 +1,7 @@
 <div class="login-box">
     <div class="card card-outline card-primary">
         <div class="card-header text-center">
-            <a href="#" class="h1"><b>Assest</b>men</a>
+            <a href="#" class="h1"><b>Assess</b>ment</a>
         </div>
         <div class="card-body">
 
