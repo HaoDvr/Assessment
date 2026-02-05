@@ -29,6 +29,9 @@
 <script src="public/assets/js/dataTableConfig.js"></script>
 <script src="public/assets/js/usuarios.js"></script>
 <script src="public/assets/js/formulario.js"></script>
+
+<script src="public/assets/plugins/jquery/jquery.min.js"></script>
+<script src="public/assets/plugins/select2/js/select2.full.min.js"></script>
 </body>
 
 </html>

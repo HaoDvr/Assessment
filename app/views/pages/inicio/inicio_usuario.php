@@ -64,16 +64,23 @@ $nombreFormateado = mb_convert_case(mb_strtolower($_SESSION["nombre"]), MB_CASE_
                                         <input type="hidden" name="nombre_usuario_txt" value="<?php echo $nombreFormateado; ?>">
 
                                         <?php
+                                        // Declaramos los arreglos para que el foreach no falle
                                         $preguntas = PreguntasControlador::ctrMostrarPreguntas($_SESSION["id"]);
                                         $respuestas = OpcionesRespuestaControlador::ctrMostrarOpcionesRespuesta();
-                                        $totalPreguntas = count($preguntas);
 
+                                        // Verificación de seguridad para evitar el error de "null"
+                                        if (!is_array($preguntas)) {
+                                            $preguntas = [];
+                                        }
+
+                                        $totalPreguntas = count($preguntas);
                                         $porPagina = 1;
                                         $numPaso = 1;
 
                                         foreach ($preguntas as $index => $pregunta) :
                                             $idPregunta = $pregunta["id_preguntas_finales"];
 
+                                            // Lógica de apertura de página (Pagination)
                                             if ($index % $porPagina == 0) {
                                                 $claseVisible = ($index == 0) ? "" : "d-none";
                                                 echo '<div class="pagina-encuesta ' . $claseVisible . '" id="paso-' . $numPaso . '">';
@@ -97,9 +104,54 @@ $nombreFormateado = mb_convert_case(mb_strtolower($_SESSION["nombre"]), MB_CASE_
                                                         <textarea class="form-control"
                                                             id="libre_<?php echo $idPregunta; ?>"
                                                             name="respuestas[<?php echo $idPregunta; ?>][libre]"
-                                                            placeholder="Escriba aquí los detalles de su respuesta detallada..."
+                                                            placeholder="Escriba aquí los detalles..."
                                                             style="height: 120px; border-radius: 10px; border: 1px solid #dee2e6; font-size: 0.9rem; padding: 15px;"
                                                             required></textarea>
+                                                    </div>
+                                                </div>
+
+                                                <div class="filtros-seleccion mb-4 p-3 border rounded shadow-sm" style="background-color: #ffffff; border-radius: 15px !important;">
+                                                    <div class="row">
+
+                                                        <div class="col-12 mb-3 text-left">
+                                                            <label class="small fw-bold text-primary mb-1 d-block">
+                                                                <i class="fas fa-network-wired mr-1"></i> Dominio(s)
+                                                            </label>
+                                                            <div class="select2-primary">
+                                                                <select class="form-control select2 select-dominio"
+                                                                    multiple="multiple"
+                                                                    data-placeholder="Seleccionar dominios..."
+                                                                    name="respuestas[<?php echo $idPregunta; ?>][dominios][]"
+                                                                    style="width: 100%;">
+                                                                    <option value="RAN">RAN</option>
+                                                                    <option value="CORE">CORE</option>
+                                                                    <option value="DATACOM">DATACOM</option>
+                                                                    <option value="INFRAESTRUCTURA">INFRAESTRUCTURA</option>
+                                                                    <option value="TODOS">TODOS</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="col-12 text-left">
+                                                            <label class="small fw-bold text-primary mb-1 d-block">
+                                                                <i class="fas fa-concierge-bell mr-1"></i> Servicio(s)
+                                                            </label>
+                                                            <div class="select2-primary">
+                                                                <select class="form-control select2 select-servicio"
+                                                                    multiple="multiple"
+                                                                    data-placeholder="Seleccionar servicios..."
+                                                                    name="respuestas[<?php echo $idPregunta; ?>][servicios][]"
+                                                                    style="width: 100%;">
+                                                                    <option value="APLICACIONES">APLICACIONES</option>
+                                                                    <option value="BACK OFFICE">BACK OFFICE</option>
+                                                                    <option value="CANAL DIGITAL">CANAL DIGITAL</option>
+                                                                    <option value="POSTPAGO">POSTPAGO</option>
+                                                                    <option value="PREPAGO">PREPAGO</option>
+                                                                    <option value="TODOS">TODOS</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
                                                     </div>
                                                 </div>
 
@@ -111,8 +163,7 @@ $nombreFormateado = mb_convert_case(mb_strtolower($_SESSION["nombre"]), MB_CASE_
                                                         <div class="form-check border shadow-sm mb-3 d-flex align-items-center justify-content-start text-left py-3"
                                                             style="cursor: pointer; border-radius: 10px !important; position: relative; min-height: 60px;">
 
-                                                            <input class="form-check-input"
-                                                                type="radio"
+                                                            <input class="form-check-input" type="radio"
                                                                 name="respuestas[<?php echo $idPregunta; ?>][id_seleccionada]"
                                                                 id="<?php echo $inputId; ?>"
                                                                 value="<?php echo $idOpcion; ?>"
@@ -132,7 +183,7 @@ $nombreFormateado = mb_convert_case(mb_strtolower($_SESSION["nombre"]), MB_CASE_
                                                     <input type="hidden" name="respuestas[<?php echo $idPregunta; ?>][respuesta_txt]" id="txt_<?php echo $idPregunta; ?>">
                                                     <input type="hidden" name="respuestas[<?php echo $idPregunta; ?>][valor]" id="val_<?php echo $idPregunta; ?>">
 
-                                                    <div class="invalid-feedback mt-2 fw-bold p-2 rounded-2" style="font-size: 0.85rem; border: 1px solid #dc3545; background-color: #fff8f8; display: none;">
+                                                    <div class="invalid-feedback mt-2 fw-bold p-2 rounded-2 feedback-radio" style="font-size: 0.85rem; border: 1px solid #dc3545; background-color: #fff8f8; display: none;">
                                                         Debes seleccionar una opción para continuar.
                                                     </div>
                                                 </div>
@@ -145,13 +196,14 @@ $nombreFormateado = mb_convert_case(mb_strtolower($_SESSION["nombre"]), MB_CASE_
                                                         <textarea class="form-control"
                                                             id="detallada_<?php echo $idPregunta; ?>"
                                                             name="respuestas[<?php echo $idPregunta; ?>][detallada]"
-                                                            placeholder="Escriba aquí los detalles de su iniciativa (si aplica)..."
+                                                            placeholder="Escriba aquí los detalles..."
                                                             style="height: 100px; border-radius: 10px; border: 1px solid #dee2e6; font-size: 0.9rem; padding: 15px;"></textarea>
                                                     </div>
                                                 </div>
                                             </div>
 
                                         <?php
+                                            // Lógica de cierre de página
                                             if (($index + 1) % $porPagina == 0 || ($index + 1) == $totalPreguntas) {
                                                 echo '</div>';
                                             }

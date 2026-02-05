@@ -2,7 +2,6 @@ document.addEventListener("DOMContentLoaded", function () {
     let pasoActual = 1;
     const form = document.getElementById("formularioMadurez");
 
-    // Si no encuentra el formulario en esta página, no ejecuta el resto para evitar errores
     if (!form) return;
 
     const paginas = document.querySelectorAll(".pagina-encuesta");
@@ -14,17 +13,25 @@ document.addEventListener("DOMContentLoaded", function () {
     const progressBar = document.getElementById("progressBar");
     const progresoTexto = document.getElementById("progresoTexto");
 
-    // 1. Captura de datos de Radios (Corregido para manejar nulos)
+    // --- 1. LIMPIEZA DINÁMICA DE ERRORES (Tiempo Real) ---
+    // Escucha cuando el usuario escribe para quitar el rojo del textarea
+    form.addEventListener("input", function (event) {
+        if (event.target.tagName === "TEXTAREA") {
+            if (event.target.value.trim() !== "") {
+                event.target.classList.remove("is-invalid");
+            }
+        }
+    });
+
+    // Escucha cambios en radios y limpia su feedback
     form.addEventListener("change", function (event) {
         if (event.target.type === "radio") {
             const nameAttr = event.target.name;
             const match = nameAttr.match(/\[(\d+)\]/);
-
             if (match) {
                 const idPregunta = match[1];
                 const txtInput = document.getElementById("txt_" + idPregunta);
                 const valInput = document.getElementById("val_" + idPregunta);
-
                 if (txtInput)
                     txtInput.value =
                         event.target.getAttribute("data-texto") || "";
@@ -32,8 +39,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     valInput.value =
                         event.target.getAttribute("data-valor") || "";
             }
-
-            // Ocultar mensaje de error al seleccionar
             const grupo = event.target.closest(".grupo-opciones");
             if (grupo) {
                 const feedback = grupo.querySelector(".invalid-feedback");
@@ -42,45 +47,71 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // 2. Función de Validación (Ajustada para campos opcionales)
+    // --- 2. FUNCIÓN DE VALIDACIÓN REFORZADA ---
     function validarPasoActual() {
         const pasoVisible = document.getElementById("paso-" + pasoActual);
         if (!pasoVisible) return false;
 
-        const gruposRadio = pasoVisible.querySelectorAll(".grupo-opciones");
-        // Solo validamos textareas que tengan el atributo 'required'
-        const textareasRequired =
-            pasoVisible.querySelectorAll("textarea[required]");
         let esValido = true;
+        let mensajeError = "";
 
-        // Validar Radios
+        // A. Validar Radios
+        const gruposRadio = pasoVisible.querySelectorAll(".grupo-opciones");
         gruposRadio.forEach((grupo) => {
             const radios = grupo.querySelectorAll('input[type="radio"]');
             const feedback = grupo.querySelector(".invalid-feedback");
             const seleccionado = Array.from(radios).some((r) => r.checked);
-
             if (!seleccionado) {
                 esValido = false;
+                mensajeError = "Debes seleccionar una opción de la lista.";
                 if (feedback) feedback.style.display = "block";
-            } else {
-                if (feedback) feedback.style.display = "none";
             }
         });
 
-        // Validar Textareas obligatorios
+        // B. Validar Textareas Required
+        // Forzamos la limpieza antes de validar para evitar el error de "atascado"
+        const textareasRequired =
+            pasoVisible.querySelectorAll("textarea[required]");
         textareasRequired.forEach((area) => {
-            if (!area.value.trim()) {
+            if (area.value.trim() === "") {
                 esValido = false;
+                mensajeError = "La respuesta detallada es obligatoria.";
                 area.classList.add("is-invalid");
             } else {
                 area.classList.remove("is-invalid");
             }
         });
 
+        // C. VALIDAR SELECT2 (Dominio y Servicio)
+        const selectsMulti = pasoVisible.querySelectorAll("select.select2");
+        selectsMulti.forEach((select) => {
+            const val = $(select).val(); // Obtenemos el valor mediante jQuery
+            const container = $(select)
+                .next(".select2-container")
+                .find(".select2-selection");
+
+            if (!val || val.length === 0) {
+                esValido = false;
+                mensajeError = "Selecciona al menos un Dominio y un Servicio.";
+                container.css("border", "1px solid #dc3545"); // Borde rojo manual
+            } else {
+                container.css("border", "1px solid #ced4da"); // Borde normal
+            }
+        });
+
+        if (!esValido) {
+            Swal.fire({
+                icon: "warning",
+                title: "Atención",
+                text: mensajeError,
+                confirmButtonColor: "#3085d6",
+            });
+        }
+
         return esValido;
     }
 
-    // 3. Navegación e Interfaz
+    // --- 3. NAVEGACIÓN ---
     function actualizarInterfaz() {
         paginas.forEach((p, i) => {
             p.classList.toggle("d-none", i + 1 !== pasoActual);
@@ -101,11 +132,9 @@ document.addEventListener("DOMContentLoaded", function () {
             if (btnSiguiente) btnSiguiente.classList.remove("d-none");
             if (btnSubmit) btnSubmit.classList.add("d-none");
         }
-
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    // 4. Eventos de Botones
     if (btnSiguiente) {
         btnSiguiente.addEventListener("click", () => {
             if (validarPasoActual()) {
@@ -124,7 +153,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // 5. Envío del Formulario
+    // --- 4. ENVÍO AJAX ---
     form.addEventListener("submit", function (e) {
         e.preventDefault();
         if (validarPasoActual()) {
@@ -149,7 +178,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             },
             success: function (respuesta) {
-                // Limpiamos la respuesta de posibles espacios o errores de PHP
                 if (respuesta.trim() === "ok") {
                     Swal.fire({
                         title: "¡Éxito!",
@@ -172,19 +200,27 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                 }
             },
-            error: function (jqXHR, textStatus, errorThrown) {
-                Swal.fire(
-                    "Error de Red",
-                    "No se pudo contactar con el servidor.",
-                    "error",
-                );
-                if (btnSubmit) {
-                    btnSubmit.disabled = false;
-                    btnSubmit.innerHTML = "Enviar Formulario";
-                }
-            },
         });
     }
+
+    // --- 5. INICIALIZACIÓN SELECT2 (AdminLTE Style) ---
+    $(document).ready(function () {
+        $(".select2").select2({
+            theme: "bootstrap4",
+            allowClear: true,
+            width: "100%",
+            placeholder: "Selecciona opciones",
+            containerCssClass: ":all:",
+        });
+
+        // Limpiar el borde rojo de Select2 al seleccionar algo
+        $(".select2").on("change", function () {
+            const container = $(this)
+                .next(".select2-container")
+                .find(".select2-selection");
+            container.css("border", "1px solid #ced4da");
+        });
+    });
 
     actualizarInterfaz();
 });

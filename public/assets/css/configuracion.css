@@ -11,3 +11,52 @@
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     border-radius: 10px;
 }
+
+/* 1. Contenedor principal: Forzamos Flexbox y alineación central */
+.select2-container--bootstrap4 .select2-selection--multiple {
+    min-height: 45px !important;
+    display: flex !important;
+    align-items: center !important; /* Centra el contenido verticalmente */
+    padding: 0 10px !important; /* Solo espacio a los lados, el alto lo maneja el flex */
+    border-radius: 10px !important;
+}
+
+/* 2. Lista de etiquetas: Eliminamos márgenes que empujan hacia abajo */
+.select2-container--bootstrap4
+    .select2-selection--multiple
+    .select2-selection__rendered {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* 3. La píldora azul: Margenes simétricos para que no se pegue a los bordes */
+.select2-container--bootstrap4
+    .select2-selection--multiple
+    .select2-selection__choice {
+    background-color: #007bff !important;
+    color: #fff !important;
+    border: none !important;
+    font-size: 0.75rem !important;
+    padding: 3px 10px !important;
+    /* Margen arriba y abajo IGUALES para mantener el centro */
+    margin: 5px 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    border-radius: 4px !important;
+}
+
+/* 4. Ajuste del buscador (el palito que parpadea) */
+.select2-search.select2-search--inline {
+    display: flex !important;
+    align-items: center !important;
+    margin-top: 0 !important;
+}
+
+.select2-search__field {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    height: 24px !important; /* Altura controlada para no estirar el div */
+}
