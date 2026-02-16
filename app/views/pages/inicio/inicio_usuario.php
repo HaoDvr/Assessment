@@ -78,7 +78,7 @@ $nombreFormateado = mb_convert_case(mb_strtolower($_SESSION["nombre"]), MB_CASE_
                                         $numPaso = 1;
 
                                         foreach ($preguntas as $index => $pregunta) :
-                                            $idPregunta = $pregunta["id_preguntas_finales"];
+                                            $idPregunta = $pregunta["preguntas_final_id"];
 
                                             // Lógica de apertura de página (Pagination)
                                             if ($index % $porPagina == 0) {
@@ -89,10 +89,10 @@ $nombreFormateado = mb_convert_case(mb_strtolower($_SESSION["nombre"]), MB_CASE_
                                         ?>
 
                                             <label class="form-label text-left fw-bold text-secondary mb-4 mt-2 d-block" style="font-size: 1.1rem;">
-                                                <?php echo ($index + 1); ?>.- ¿<?php echo $pregunta["pregunta_final"]; ?>?
+                                                <?php echo ($index + 1); ?>.- ¿<?php echo $pregunta["pregunta"]; ?>?
                                             </label>
 
-                                            <input type="hidden" name="respuestas[<?php echo $idPregunta; ?>][pregunta_txt]" value="<?php echo $pregunta["pregunta_final"]; ?>">
+                                            <input type="hidden" name="respuestas[<?php echo $idPregunta; ?>][pregunta_txt]" value="<?php echo $pregunta["pregunta"]; ?>">
 
                                             <div class="bloque-respuestas mb-4">
 

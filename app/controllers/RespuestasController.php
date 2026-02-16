@@ -2,7 +2,6 @@
 
 class RespuestasControlador
 {
-
     static public function ctrGuardarEncuesta($datos)
     {
         if (isset($datos["respuestas"])) {
@@ -13,6 +12,18 @@ class RespuestasControlador
             $error = false;
 
             foreach ($datos["respuestas"] as $id_pregunta => $valores) {
+
+                // --- NUEVA LÓGICA PARA CLASIFICACIÓN JSON ---
+                // Capturamos los arrays del Select2. Si no vienen, inicializamos vacío.
+                $metadatos = [
+                    "dominios" => isset($valores["dominios"]) ? $valores["dominios"] : [],
+                    "servicios" => isset($valores["servicios"]) ? $valores["servicios"] : []
+                ];
+
+                // Convertimos el array a string JSON para MySQL
+                $clasificacionJson = json_encode($metadatos, JSON_UNESCAPED_UNICODE);
+                // --------------------------------------------
+
                 $datosSQL = array(
                     "token_respuesta"           => $token,
                     "id_usuario"                => $id_usuario,
@@ -23,10 +34,12 @@ class RespuestasControlador
                     "valor_respuesta"           => $valores["valor"],
                     "respuesta_libre_txt"       => $valores["libre"],
                     "respuesta_detallada_txt"   => $valores["detallada"],
+                    "clasificacion_json"        => $clasificacionJson, // Agregamos la nueva columna
                     "nombre_usuario_txt"        => $nombre_usuario
                 );
 
                 $respuesta = RespuestasModelo::mdlGuardarRespuesta($tabla, $datosSQL);
+
                 if ($respuesta != "ok") {
                     $error = true;
                     break;
