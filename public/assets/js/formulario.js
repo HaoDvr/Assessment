@@ -1,9 +1,38 @@
 document.addEventListener("DOMContentLoaded", function () {
-    let pasoActual = 1;
+    /*=============================================
+    1. INICIALIZACIÓN GLOBAL (Select2)
+    =============================================*/
+    // Se ejecuta en todas las páginas para que el estilo de AdminLTE/Bootstrap4 funcione siempre
+    if (typeof $.fn.select2 !== "undefined") {
+        $(".select2").select2({
+            theme: "bootstrap4",
+            allowClear: true,
+            width: "100%",
+            placeholder: "Selecciona opciones",
+            containerCssClass: ":all:",
+        });
+
+        // Limpiar el borde rojo de Select2 al seleccionar algo
+        $(".select2").on("change", function () {
+            const container = $(this)
+                .next(".select2-container")
+                .find(".select2-selection");
+            container.css("border", "1px solid #ced4da");
+        });
+    }
+
+    /*=============================================
+    2. VALIDACIÓN DE EXISTENCIA DEL FORMULARIO
+    =============================================*/
     const form = document.getElementById("formularioMadurez");
 
+    // Si no es la página de la encuesta (como en seleccion_area), detenemos la lógica del formulario aquí
     if (!form) return;
 
+    /*=============================================
+    3. VARIABLES Y ELEMENTOS DEL FORMULARIO
+    =============================================*/
+    let pasoActual = 1;
     const paginas = document.querySelectorAll(".pagina-encuesta");
     const totalPasos = paginas.length;
 
@@ -13,8 +42,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const progressBar = document.getElementById("progressBar");
     const progresoTexto = document.getElementById("progresoTexto");
 
-    // --- 1. LIMPIEZA DINÁMICA DE ERRORES (Tiempo Real) ---
-    // Escucha cuando el usuario escribe para quitar el rojo del textarea
+    // --- LIMPIEZA DINÁMICA DE ERRORES (Tiempo Real) ---
     form.addEventListener("input", function (event) {
         if (event.target.tagName === "TEXTAREA") {
             if (event.target.value.trim() !== "") {
@@ -23,7 +51,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Escucha cambios en radios y limpia su feedback
     form.addEventListener("change", function (event) {
         if (event.target.type === "radio") {
             const nameAttr = event.target.name;
@@ -47,7 +74,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // --- 2. FUNCIÓN DE VALIDACIÓN REFORZADA ---
+    // --- FUNCIÓN DE VALIDACIÓN REFORZADA ---
     function validarPasoActual() {
         const pasoVisible = document.getElementById("paso-" + pasoActual);
         if (!pasoVisible) return false;
@@ -69,7 +96,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         // B. Validar Textareas Required
-        // Forzamos la limpieza antes de validar para evitar el error de "atascado"
         const textareasRequired =
             pasoVisible.querySelectorAll("textarea[required]");
         textareasRequired.forEach((area) => {
@@ -85,7 +111,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // C. VALIDAR SELECT2 (Dominio y Servicio)
         const selectsMulti = pasoVisible.querySelectorAll("select.select2");
         selectsMulti.forEach((select) => {
-            const val = $(select).val(); // Obtenemos el valor mediante jQuery
+            const val = $(select).val();
             const container = $(select)
                 .next(".select2-container")
                 .find(".select2-selection");
@@ -93,9 +119,9 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!val || val.length === 0) {
                 esValido = false;
                 mensajeError = "Selecciona al menos un Dominio y un Servicio.";
-                container.css("border", "1px solid #dc3545"); // Borde rojo manual
+                container.css("border", "1px solid #dc3545");
             } else {
-                container.css("border", "1px solid #ced4da"); // Borde normal
+                container.css("border", "1px solid #ced4da");
             }
         });
 
@@ -111,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return esValido;
     }
 
-    // --- 3. NAVEGACIÓN ---
+    // --- NAVEGACIÓN ---
     function actualizarInterfaz() {
         paginas.forEach((p, i) => {
             p.classList.toggle("d-none", i + 1 !== pasoActual);
@@ -153,7 +179,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // --- 4. ENVÍO AJAX ---
+    // --- ENVÍO AJAX ---
     form.addEventListener("submit", function (e) {
         e.preventDefault();
         if (validarPasoActual()) {
@@ -203,24 +229,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // --- 5. INICIALIZACIÓN SELECT2 (AdminLTE Style) ---
-    $(document).ready(function () {
-        $(".select2").select2({
-            theme: "bootstrap4",
-            allowClear: true,
-            width: "100%",
-            placeholder: "Selecciona opciones",
-            containerCssClass: ":all:",
-        });
-
-        // Limpiar el borde rojo de Select2 al seleccionar algo
-        $(".select2").on("change", function () {
-            const container = $(this)
-                .next(".select2-container")
-                .find(".select2-selection");
-            container.css("border", "1px solid #ced4da");
-        });
-    });
-
+    // Ejecución inicial de la interfaz
     actualizarInterfaz();
 });

@@ -50,7 +50,7 @@ if (isset($_SESSION["iniciarSesion"]) && $_SESSION["iniciarSesion"] == "ok") {
 
     if (isset($url)) {
 
-        $paginas_validas = ["usuarios", "salir", "inicio", "fin"];
+        $paginas_validas = ["usuarios", "salir", "inicio", "fin", "seleccion"];
 
         if (in_array($url, $paginas_validas)) {
 
@@ -68,12 +68,17 @@ if (isset($_SESSION["iniciarSesion"]) && $_SESSION["iniciarSesion"] == "ok") {
                     include "app/views/pages/errors/404.php";
                 }
             } else {
-
                 // RUTAS PERMITIDAS PARA EL USUARIO
                 if ($url == "inicio") {
-                    include "app/views/pages/inicio/inicio_usuario.php";
+                    if (!isset($_SESSION["areas_seleccionadas"])) {
+                        // CAMBIAMOS LA RUTA A LA CARPETA CORRECTA
+                        include "app/views/pages/seleccion_area/seleccion_area.php";
+                    } else {
+                        include "app/views/pages/inicio/inicio_usuario.php";
+                    }
+                } else if ($url == "seleccion") {
+                    include "app/views/pages/seleccion_area/seleccion_area.php";
                 } else if ($url == "salir") {
-                    // Importante: Permitir que el usuario también pueda salir
                     include "app/views/pages/salir/salir.php";
                 } else {
                     include "app/views/pages/errors/404.php";

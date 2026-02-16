@@ -29,6 +29,8 @@ header("Content-Security-Policy: default-src 'self' https://fonts.gstatic.com ht
 
     <link rel="stylesheet" href="public/assets/css/adminlte.min.css">
     <link rel="stylesheet" href="public/assets/css/configuracion.css">
+
+    <script src="public/assets/plugins/jquery/jquery.min.js"></script>
 </head>
 
 <body class="hold-transition <?php echo (isset($_SESSION["iniciarSesion"]) && $_SESSION["iniciarSesion"] == "ok") ? 'sidebar-mini layout-fixed' : 'login-page'; ?>">
