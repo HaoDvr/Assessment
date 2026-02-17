@@ -1,8 +1,8 @@
 <?php
 // ajax/respuestas.ajax.php
 
-require_once "../controllers/RespuestasController.php";
-require_once "../models/RespuestasModel.php";
+require_once __DIR__ . "/../controllers/RespuestasController.php";
+require_once __DIR__ . "/../models/RespuestasModel.php";
 
 class AjaxRespuestas
 {

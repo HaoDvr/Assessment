@@ -3,6 +3,10 @@
 <?php
 // Formateamos el nombre del usuario para que siempre se vea bien
 $nombreFormateado = mb_convert_case(mb_strtolower($_SESSION["nombre"]), MB_CASE_TITLE, "UTF-8");
+
+// Detectamos si se seleccionaron todas las áreas para el título global
+$areasElegidas = $_SESSION["areas_seleccionadas"] ?? [];
+$esTodas = in_array("Todas", $areasElegidas);
 ?>
 
 <style>
@@ -14,6 +18,14 @@ $nombreFormateado = mb_convert_case(mb_strtolower($_SESSION["nombre"]), MB_CASE_
     .form-control.is-invalid {
         border-color: #dc3545 !important;
         box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    }
+
+    .badge-area {
+        font-size: 0.75rem;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
     }
 </style>
 
@@ -53,7 +65,10 @@ $nombreFormateado = mb_convert_case(mb_strtolower($_SESSION["nombre"]), MB_CASE_
                                         <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%;"></div>
                                     </div>
 
-                                    <small id="progresoTexto" class="text-primary fw-bold d-block mt-1 text-end">Paso 1</small>
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <small class="text-muted italic">Entrevistado: <b><?php echo $_SESSION["entrevistado_actual"] ?? 'No definido'; ?></b></small>
+                                        <small id="progresoTexto" class="text-primary fw-bold">Paso 1</small>
+                                    </div>
                                 </div>
 
                                 <div class="contieneFormulario text-start px-md-4">
@@ -64,11 +79,10 @@ $nombreFormateado = mb_convert_case(mb_strtolower($_SESSION["nombre"]), MB_CASE_
                                         <input type="hidden" name="nombre_usuario_txt" value="<?php echo $nombreFormateado; ?>">
 
                                         <?php
-                                        // Declaramos los arreglos para que el foreach no falle
-                                        $preguntas = PreguntasControlador::ctrMostrarPreguntas($_SESSION["id"]);
+                                        // Cargamos preguntas y opciones
+                                        $preguntas = PreguntasControlador::ctrMostrarPreguntas();
                                         $respuestas = OpcionesRespuestaControlador::ctrMostrarOpcionesRespuesta();
 
-                                        // Verificación de seguridad para evitar el error de "null"
                                         if (!is_array($preguntas)) {
                                             $preguntas = [];
                                         }
@@ -79,20 +93,49 @@ $nombreFormateado = mb_convert_case(mb_strtolower($_SESSION["nombre"]), MB_CASE_
 
                                         foreach ($preguntas as $index => $pregunta) :
                                             $idPregunta = $pregunta["preguntas_final_id"];
+                                            $areaActual = $pregunta["area"];
+                                            $flujo = $pregunta["nombre_flujo"];
+                                            $subflujo = $pregunta["nombre_sub_flujo"];
+                                            $categoriaTarea = $pregunta["categoria_tarea"];
 
                                             // Lógica de apertura de página (Pagination)
                                             if ($index % $porPagina == 0) {
                                                 $claseVisible = ($index == 0) ? "" : "d-none";
                                                 echo '<div class="pagina-encuesta ' . $claseVisible . '" id="paso-' . $numPaso . '">';
+
+                                                /* =============================================
+                                                   CABECERA DINÁMICA DE ÁREA
+                                                ============================================= */
+                                                $tipoEncuesta = $esTodas ? "Cuestionario Completo" : "Evaluación por Área";
+                                                $claseBadge = $esTodas ? "bg-success" : "bg-primary";
+
+                                                echo '
+                                                <div class="mb-4 pb-3 border-bottom">
+                                                    <span class="badge ' . $claseBadge . ' text-white badge-area mb-2">
+                                                        <i class="fas fa-clipboard-list mr-1"></i> ' . $tipoEncuesta . '
+                                                    </span>
+                                                    <h3 class="text-dark font-weight-bold mb-0">
+                                                        Preguntas de <span class="text-primary">' . $areaActual . '</span>
+                                                    </h3>
+                                                    <p class="text-muted small mb-0">Bloque técnico destinado al análisis de infraestructura en ' . $areaActual . '.</p>
+                                                </div>';
+
                                                 $numPaso++;
                                             }
                                         ?>
 
-                                            <label class="form-label text-left fw-bold text-secondary mb-4 mt-2 d-block" style="font-size: 1.1rem;">
+                                            <label class="form-label text-left fw-bold text-secondary my-2 d-block" style="font-size: 1.1rem;">
                                                 <?php echo ($index + 1); ?>.- ¿<?php echo $pregunta["pregunta"]; ?>?
                                             </label>
 
+                                            <div class="contenedor-flujos text-left mb-2">
+                                                <div class="badge badge-secondary"><?php echo $flujo; ?></div>
+                                                <div class="badge badge-secondary"><?php echo $subflujo; ?></div>
+                                                <div class="badge badge-secondary"><?php echo $categoriaTarea; ?></div>
+                                            </div>
+
                                             <input type="hidden" name="respuestas[<?php echo $idPregunta; ?>][pregunta_txt]" value="<?php echo $pregunta["pregunta"]; ?>">
+                                            <input type="hidden" name="respuestas[<?php echo $idPregunta; ?>][area]" value="<?php echo $areaActual; ?>">
 
                                             <div class="bloque-respuestas mb-4">
 

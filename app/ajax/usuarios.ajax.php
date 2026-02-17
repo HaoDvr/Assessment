@@ -1,8 +1,8 @@
 <?php
 
 // Requerimos el controlador y el modelo para que la clase Ajax pueda usarlos
-require_once "../controllers/UsuariosController.php";
-require_once "../models/UsuariosModel.php";
+require_once __DIR__ . "/../controllers/UsuariosController.php";
+require_once __DIR__ . "/../models/UsuariosModel.php";
 
 class AjaxUsuarios
 {

@@ -1,12 +1,11 @@
 <?php
-require_once "conexion.php";
+require_once __DIR__ . "/Conexion.php";
 
 class ModeloMostrarPreguntas
 {
     static public function mdlMostrarPreguntasFiltradas($tabla, $entrevistado, $areas)
     {
-        // 1. Quitamos p.usuario_asignado del WHERE porque las preguntas son globales.
-        // Mantenemos el JOIN para saber si ESTE entrevistado ya respondió.
+        // 1. Query base
         $sql = "SELECT p.* FROM $tabla p
             LEFT JOIN respuestas_usuarios r ON (p.preguntas_final_id = r.id_pregunta AND r.nombre_usuario_txt = :entrevistado)
             WHERE r.id_pregunta IS NULL";
@@ -20,12 +19,17 @@ class ModeloMostrarPreguntas
             $sql .= " AND p.area IN ($placeholders)";
         }
 
+        /* =============================================
+           ESTA ES LA UBICACIÓN CORRECTA DEL ORDER BY
+        ============================================= */
+        $sql .= " ORDER BY p.area ASC, p.preguntas_final_id ASC";
+
         $stmt = Conexion::conectar()->prepare($sql);
 
-        // Enlazamos el nombre del entrevistado para la validación de respuestas
+        // Enlazamos el nombre del entrevistado
         $stmt->bindParam(":entrevistado", $entrevistado, PDO::PARAM_STR);
 
-        // Bind dinámico para las áreas seleccionadas
+        // Bind dinámico para las áreas
         if (!empty($areas) && !in_array("Todas", $areas)) {
             foreach ($areas as $k => $area) {
                 $stmt->bindValue(":area$k", $area, PDO::PARAM_STR);
@@ -33,11 +37,15 @@ class ModeloMostrarPreguntas
         }
 
         $stmt->execute();
-        return $stmt->fetchAll();
 
-        // Práctica Senior: Cerramos la conexión
-        $stmt->close();
+        // Guardamos resultados antes de cerrar para que no marque error
+        $resultado = $stmt->fetchAll();
+
+        // Práctica Senior: Cerramos la conexión correctamente
+        $stmt->closeCursor(); // Usamos closeCursor en lugar de close
         $stmt = null;
+
+        return $resultado;
     }
 
     /*=============================================
@@ -45,15 +53,13 @@ class ModeloMostrarPreguntas
     =============================================*/
     static public function mdlMostrarAreasUnicas($tabla)
     {
-        // Eliminamos el WHERE usuario_asignado para que sea global
         $stmt = Conexion::conectar()->prepare("SELECT DISTINCT area FROM $tabla WHERE area IS NOT NULL AND area != '' ORDER BY area ASC");
-
         $stmt->execute();
+        $resultado = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-        // Retornamos un array simple con los nombres de las áreas
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-        $stmt->close();
+        $stmt->closeCursor();
         $stmt = null;
+
+        return $resultado;
     }
 }
