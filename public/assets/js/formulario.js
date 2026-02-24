@@ -2,59 +2,55 @@ document.addEventListener("DOMContentLoaded", function () {
     /*=============================================
     1. INICIALIZACIÓN GLOBAL (Select2)
     =============================================*/
-    // Se ejecuta en todas las páginas para que el estilo de AdminLTE/Bootstrap4 funcione siempre
-    if (typeof $.fn.select2 !== "undefined") {
-        $(".select2").select2({
-            theme: "bootstrap4",
-            allowClear: true,
-            width: "100%",
-            placeholder: "Selecciona opciones",
-            containerCssClass: ":all:",
-        });
-
-        // Limpiar el borde rojo de Select2 al seleccionar algo
-        $(".select2").on("change", function () {
-            const container = $(this)
-                .next(".select2-container")
-                .find(".select2-selection");
-            container.css("border", "1px solid #ced4da");
-        });
+    function initSelect2(selector) {
+        if (typeof $.fn.select2 !== "undefined") {
+            $(selector).select2({
+                theme: "bootstrap4",
+                allowClear: true,
+                width: "100%",
+                placeholder: "Selecciona opciones",
+            });
+        }
     }
 
-    /*=============================================
-    2. VALIDACIÓN DE EXISTENCIA DEL FORMULARIO
-    =============================================*/
-    const form = document.getElementById("formularioMadurez");
+    // Inicialización inicial
+    initSelect2(".select2");
 
-    // Si no es la página de la encuesta (como en seleccion_area), detenemos la lógica del formulario aquí
+    // Limpiar borde rojo al cambiar Select2 (Usamos delegación para clones)
+    $(document).on("change", ".select2", function () {
+        $(this)
+            .next(".select2-container")
+            .find(".select2-selection")
+            .css("border", "1px solid #ced4da");
+    });
+
+    const form = document.getElementById("formularioMadurez");
     if (!form) return;
 
-    /*=============================================
-    3. VARIABLES Y ELEMENTOS DEL FORMULARIO
-    =============================================*/
     let pasoActual = 1;
-    const paginas = document.querySelectorAll(".pagina-encuesta");
-    const totalPasos = paginas.length;
-
     const btnSiguiente = document.getElementById("btnSiguiente");
     const btnAnterior = document.getElementById("btnAnterior");
     const btnSubmit = document.getElementById("btnSubmit");
+    const btnDuplicar = document.getElementById("btnDuplicar");
     const progressBar = document.getElementById("progressBar");
     const progresoTexto = document.getElementById("progresoTexto");
 
-    // --- LIMPIEZA DINÁMICA DE ERRORES (Tiempo Real) ---
+    /*=============================================
+    2. LIMPIEZA DINÁMICA DE ERRORES
+    =============================================*/
     form.addEventListener("input", function (event) {
-        if (event.target.tagName === "TEXTAREA") {
-            if (event.target.value.trim() !== "") {
-                event.target.classList.remove("is-invalid");
-            }
+        if (
+            event.target.tagName === "TEXTAREA" ||
+            event.target.tagName === "INPUT"
+        ) {
+            event.target.classList.remove("is-invalid");
         }
     });
 
     form.addEventListener("change", function (event) {
         if (event.target.type === "radio") {
             const nameAttr = event.target.name;
-            const match = nameAttr.match(/\[(\d+)\]/);
+            const match = nameAttr.match(/\[([^\]]+)\]/);
             if (match) {
                 const idPregunta = match[1];
                 const txtInput = document.getElementById("txt_" + idPregunta);
@@ -74,161 +70,266 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // --- FUNCIÓN DE VALIDACIÓN REFORZADA ---
-    function validarPasoActual() {
-        const pasoVisible = document.getElementById("paso-" + pasoActual);
-        if (!pasoVisible) return false;
+    /*=============================================
+    FASE 2: LOGICA CHECKBOX NO RESPONDE
+    =============================================*/
+    $(document).on("change", ".chk-no-responde", function () {
+        const paginaEncuesta = $(this).closest(".pagina-encuesta");
+        const areaReasignar = paginaEncuesta.find(".area-reasignar");
+        const bloquePrincipal = paginaEncuesta.find(
+            ".bloque-respuestas-principal",
+        );
 
-        let esValido = true;
-        let mensajeError = "";
-
-        // A. Validar Radios
-        const gruposRadio = pasoVisible.querySelectorAll(".grupo-opciones");
-        gruposRadio.forEach((grupo) => {
-            const radios = grupo.querySelectorAll('input[type="radio"]');
-            const feedback = grupo.querySelector(".invalid-feedback");
-            const seleccionado = Array.from(radios).some((r) => r.checked);
-            if (!seleccionado) {
-                esValido = false;
-                mensajeError = "Debes seleccionar una opción de la lista.";
-                if (feedback) feedback.style.display = "block";
-            }
-        });
-
-        // B. Validar Textareas Required
-        const textareasRequired =
-            pasoVisible.querySelectorAll("textarea[required]");
-        textareasRequired.forEach((area) => {
-            if (area.value.trim() === "") {
-                esValido = false;
-                mensajeError = "La respuesta detallada es obligatoria.";
-                area.classList.add("is-invalid");
-            } else {
-                area.classList.remove("is-invalid");
-            }
-        });
-
-        // C. VALIDAR SELECT2 (Dominio y Servicio)
-        const selectsMulti = pasoVisible.querySelectorAll("select.select2");
-        selectsMulti.forEach((select) => {
-            const val = $(select).val();
-            const container = $(select)
-                .next(".select2-container")
-                .find(".select2-selection");
-
-            if (!val || val.length === 0) {
-                esValido = false;
-                mensajeError = "Selecciona al menos un Dominio y un Servicio.";
-                container.css("border", "1px solid #dc3545");
-            } else {
-                container.css("border", "1px solid #ced4da");
-            }
-        });
-
-        if (!esValido) {
-            Swal.fire({
-                icon: "warning",
-                title: "Atención",
-                text: mensajeError,
-                confirmButtonColor: "#3085d6",
-            });
-        }
-
-        return esValido;
-    }
-
-    // --- NAVEGACIÓN ---
-    function actualizarInterfaz() {
-        paginas.forEach((p, i) => {
-            p.classList.toggle("d-none", i + 1 !== pasoActual);
-        });
-
-        const porcentaje = (pasoActual / totalPasos) * 100;
-        if (progressBar) progressBar.style.width = porcentaje + "%";
-        if (progresoTexto)
-            progresoTexto.innerText = `Paso ${pasoActual} de ${totalPasos}`;
-
-        if (btnAnterior)
-            btnAnterior.classList.toggle("d-none", pasoActual === 1);
-
-        if (pasoActual === totalPasos) {
-            if (btnSiguiente) btnSiguiente.classList.add("d-none");
-            if (btnSubmit) btnSubmit.classList.remove("d-none");
+        if ($(this).is(":checked")) {
+            areaReasignar.slideDown();
+            bloquePrincipal.fadeOut();
+            bloquePrincipal
+                .find("[required]")
+                .prop("required", false)
+                .removeClass("is-invalid");
+            areaReasignar.find("input, textarea").prop("required", true);
         } else {
-            if (btnSiguiente) btnSiguiente.classList.remove("d-none");
-            if (btnSubmit) btnSubmit.classList.add("d-none");
-        }
-        window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-    if (btnSiguiente) {
-        btnSiguiente.addEventListener("click", () => {
-            if (validarPasoActual()) {
-                pasoActual++;
-                actualizarInterfaz();
-            }
-        });
-    }
-
-    if (btnAnterior) {
-        btnAnterior.addEventListener("click", () => {
-            if (pasoActual > 1) {
-                pasoActual--;
-                actualizarInterfaz();
-            }
-        });
-    }
-
-    // --- ENVÍO AJAX ---
-    form.addEventListener("submit", function (e) {
-        e.preventDefault();
-        if (validarPasoActual()) {
-            enviarFormularioAjax();
+            areaReasignar.slideUp();
+            bloquePrincipal.fadeIn();
+            bloquePrincipal
+                .find(".textarea-requerido, .radio-requerido")
+                .prop("required", true);
+            areaReasignar
+                .find("input, textarea")
+                .prop("required", false)
+                .val("");
         }
     });
 
-    function enviarFormularioAjax() {
-        const datos = new FormData(form);
-        $.ajax({
-            url: "app/ajax/enviaFormulario.ajax.php",
-            method: "POST",
-            data: datos,
-            cache: false,
-            contentType: false,
-            processData: false,
-            beforeSend: function () {
-                if (btnSubmit) {
-                    btnSubmit.disabled = true;
-                    btnSubmit.innerHTML =
-                        '<span class="spinner-border spinner-border-sm"></span> Enviando...';
-                }
-            },
-            success: function (respuesta) {
-                if (respuesta.trim() === "ok") {
-                    Swal.fire({
-                        title: "¡Éxito!",
-                        text: "Evaluación registrada correctamente.",
-                        icon: "success",
-                        confirmButtonText: "Aceptar",
-                    }).then(() => {
-                        window.location = "salir";
-                    });
-                } else {
-                    Swal.fire(
-                        "Error",
-                        "No se pudo guardar: " + respuesta,
-                        "error",
-                    );
-                    if (btnSubmit) {
-                        btnSubmit.disabled = false;
-                        btnSubmit.innerHTML =
-                            '<i class="fas fa-paper-plane mr-2"></i> Enviar Formulario';
-                    }
-                }
-            },
+    /*=============================================
+    FASE 3: DUPLICAR PREGUNTA (LIMPIEZA ATÓMICA)
+    =============================================*/
+    if (btnDuplicar) {
+        btnDuplicar.addEventListener("click", function () {
+            const paginas = document.querySelectorAll(".pagina-encuesta");
+            const actual = Array.from(paginas).find(
+                (p) => !p.classList.contains("d-none"),
+            );
+
+            if (!actual) return;
+
+            // 1. CAPTURA DE VALORES ORIGINALES
+            const valorDominio = $(actual).find(".select-dominio").val();
+            const valorServicio = $(actual).find(".select-servicio").val();
+
+            // 2. CLONACIÓN
+            const clon = actual.cloneNode(true);
+            const idOriginal = actual.getAttribute("data-id-original");
+            const nuevoId = idOriginal + "_copy_" + Date.now();
+
+            clon.id = "paso-clon-" + nuevoId;
+            clon.classList.add("d-none");
+            clon.setAttribute("data-id-original", nuevoId);
+
+            // 3. LIMPIEZA PROFUNDA DE SELECT2 EN EL CLON
+            // Eliminamos el contenedor visual que copió el cloneNode
+            $(clon).find(".select2-container").remove();
+
+            const selectsClon = $(clon).find(".select2");
+            selectsClon.each(function () {
+                // Truco Senior: Eliminamos los IDs internos de las opciones y del select
+                $(this)
+                    .removeClass("select2-hidden-accessible")
+                    .removeAttr("data-select2-id")
+                    .removeAttr("aria-hidden");
+
+                $(this).find("option").removeAttr("data-select2-id");
+
+                // Limpiar el rastro de jQuery Data para que Select2 crea que es nuevo
+                $(this).removeData("select2");
+                $(this).val(null);
+            });
+
+            // 4. AJUSTE DE NOMBRES E IDS
+            $(clon)
+                .find("input, textarea, select")
+                .each(function () {
+                    if (this.name)
+                        this.name = this.name.replace(
+                            `[${idOriginal}]`,
+                            `[${nuevoId}]`,
+                        );
+                    if (this.id) this.id = this.id.replace(idOriginal, nuevoId);
+
+                    if (this.type !== "hidden" && !$(this).hasClass("select2"))
+                        this.value = "";
+                    if (this.type === "radio" || this.type === "checkbox")
+                        this.checked = false;
+                });
+
+            $(clon)
+                .find("label")
+                .each(function () {
+                    const forAttr = $(this).attr("for");
+                    if (forAttr)
+                        $(this).attr(
+                            "for",
+                            forAttr.replace(idOriginal, nuevoId),
+                        );
+                });
+
+            // 5. INSERTAR E INICIALIZAR
+            actual.after(clon);
+
+            // Inicializamos el Select2 del clon (ahora sí está limpio)
+            initSelect2($(clon).find(".select2"));
+
+            // 6. RE-APLICAR VALORES (Si se desea heredar)
+            if (valorDominio)
+                $(clon)
+                    .find(".select-dominio")
+                    .val(valorDominio)
+                    .trigger("change");
+            if (valorServicio)
+                $(clon)
+                    .find(".select-servicio")
+                    .val(valorServicio)
+                    .trigger("change");
+
+            Swal.fire({
+                icon: "success",
+                title: "Pregunta Duplicada",
+                text: "Copia funcional creada.",
+                timer: 1500,
+                showConfirmButton: false,
+            });
+
+            actualizarInterfaz();
         });
     }
 
-    // Ejecución inicial de la interfaz
+    /*=============================================
+    4. NAVEGACIÓN Y VALIDACIÓN
+    =============================================*/
+    function validarPasoActual() {
+        const paginas = document.querySelectorAll(".pagina-encuesta");
+        const visible = Array.from(paginas).find(
+            (p) => !p.classList.contains("d-none"),
+        );
+        let esValido = true;
+        let mensaje = "";
+
+        const skip = visible.querySelector(".chk-no-responde");
+        if (skip && skip.checked) {
+            visible
+                .querySelectorAll(".area-reasignar [required]")
+                .forEach((el) => {
+                    if (el.value.trim() === "") {
+                        esValido = false;
+                        el.classList.add("is-invalid");
+                        mensaje =
+                            "Los campos de reasignación son obligatorios.";
+                    }
+                });
+        } else {
+            visible.querySelectorAll("[required]").forEach((el) => {
+                if (el.tagName === "SELECT") {
+                    if (!$(el).val() || $(el).val().length === 0) {
+                        esValido = false;
+                        mensaje = "Selecciona Dominio y Servicio.";
+                        $(el)
+                            .next()
+                            .find(".select2-selection")
+                            .css("border", "1px solid #dc3545");
+                    }
+                } else if (el.type === "radio") {
+                    const name = el.name;
+                    if (
+                        !visible.querySelector(`input[name="${name}"]:checked`)
+                    ) {
+                        esValido = false;
+                        mensaje = "Selecciona una opción de respuesta.";
+                        visible.querySelector(".feedback-radio").style.display =
+                            "block";
+                    }
+                } else if (el.value.trim() === "") {
+                    esValido = false;
+                    el.classList.add("is-invalid");
+                    mensaje = "La respuesta detallada es obligatoria.";
+                }
+            });
+        }
+
+        if (!esValido) Swal.fire("Atención", mensaje, "warning");
+        return esValido;
+    }
+
+    function actualizarInterfaz() {
+        const paginas = document.querySelectorAll(".pagina-encuesta");
+        const total = paginas.length;
+        let index = Array.from(paginas).findIndex(
+            (p) => !p.classList.contains("d-none"),
+        );
+        let actualNum = index + 1;
+
+        if (progressBar)
+            progressBar.style.width = (actualNum / total) * 100 + "%";
+        if (progresoTexto)
+            progresoTexto.innerText = `Paso ${actualNum} de ${total}`;
+
+        btnAnterior.classList.toggle("d-none", actualNum === 1);
+        if (actualNum === total) {
+            btnSiguiente.classList.add("d-none");
+            btnSubmit.classList.remove("d-none");
+        } else {
+            btnSiguiente.classList.remove("d-none");
+            btnSubmit.classList.add("d-none");
+        }
+    }
+
+    btnSiguiente.addEventListener("click", () => {
+        if (validarPasoActual()) {
+            const paginas = document.querySelectorAll(".pagina-encuesta");
+            let index = Array.from(paginas).findIndex(
+                (p) => !p.classList.contains("d-none"),
+            );
+            paginas[index].classList.add("d-none");
+            paginas[index + 1].classList.remove("d-none");
+            actualizarInterfaz();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    });
+
+    btnAnterior.addEventListener("click", () => {
+        const paginas = document.querySelectorAll(".pagina-encuesta");
+        let index = Array.from(paginas).findIndex(
+            (p) => !p.classList.contains("d-none"),
+        );
+        if (index > 0) {
+            paginas[index].classList.add("d-none");
+            paginas[index - 1].classList.remove("d-none");
+            actualizarInterfaz();
+        }
+    });
+
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (validarPasoActual()) {
+            const datos = new FormData(form);
+            $.ajax({
+                url: "app/ajax/enviaFormulario.ajax.php",
+                method: "POST",
+                data: datos,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function (r) {
+                    if (r.trim() === "ok") {
+                        Swal.fire(
+                            "¡Éxito!",
+                            "Evaluación guardada.",
+                            "success",
+                        ).then(() => (window.location = "salir"));
+                    }
+                },
+            });
+        }
+    });
+
     actualizarInterfaz();
 });

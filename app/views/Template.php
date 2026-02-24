@@ -9,6 +9,10 @@ LOGICA PREVIA AL RENDERIZADO
 $tituloPagina = "Assessment";
 $breadcrumbActivo = "Inicio";
 
+// Definimos la URL base para usarla en todo el sitio
+// Si estás en la raíz, deja solo "/"
+$url_base = "/";
+
 if (isset($_GET["url"])) {
     $url = preg_replace('/[^a-zA-Z0-9_]/', '', $_GET["url"]);
 }
@@ -32,18 +36,16 @@ if (isset($_SESSION["iniciarSesion"]) && $_SESSION["iniciarSesion"] == "ok") {
 
     $perfilUsuario = strtolower(trim($_SESSION["perfil"] ?? "user"));
 
-    // 1. Solo cargamos menús si es Administrador
+    // 1. Menús de Administración
     if ($perfilUsuario == "admin") {
         include "app/views/components/NavBar.php";
         include "app/views/components/SideBar.php";
     }
 
-    // 2. Si es usuario, quitamos el margen que deja el SideBar
     $estiloContenedor = ($perfilUsuario == "user") ? 'style="margin-left: 0px !important;"' : '';
 
     echo '<div class="content-wrapper" ' . $estiloContenedor . '>';
 
-    // 3. Solo mostramos el cabezal de página (breadcrumb) al Admin
     if ($perfilUsuario == "admin") {
         include "app/views/components/ContentHeader.php";
     }
@@ -55,10 +57,16 @@ if (isset($_SESSION["iniciarSesion"]) && $_SESSION["iniciarSesion"] == "ok") {
         if (in_array($url, $paginas_validas)) {
 
             /*=============================================
-            FILTRO DE VISTA POR PERFIL
+            RUTAS GLOBALES (Para ambos perfiles)
             =============================================*/
-            if ($perfilUsuario == "admin") {
+            if ($url == "salir") {
+                // Forzamos la ruta exacta del archivo salir
+                include "app/views/pages/salir/salir.php";
+            } else if ($perfilUsuario == "admin") {
 
+                /*=============================================
+                LOGICA ADMIN
+                =============================================*/
                 $carpeta = explode('_', $url)[0];
                 $ruta_archivo = "app/views/pages/" . $carpeta . "/" . $url . ".php";
 
@@ -68,18 +76,18 @@ if (isset($_SESSION["iniciarSesion"]) && $_SESSION["iniciarSesion"] == "ok") {
                     include "app/views/pages/errors/404.php";
                 }
             } else {
-                // RUTAS PERMITIDAS PARA EL USUARIO
+
+                /*=============================================
+                LOGICA USUARIO
+                =============================================*/
                 if ($url == "inicio") {
                     if (!isset($_SESSION["areas_seleccionadas"])) {
-                        // CAMBIAMOS LA RUTA A LA CARPETA CORRECTA
                         include "app/views/pages/seleccion_area/seleccion_area.php";
                     } else {
                         include "app/views/pages/inicio/inicio_usuario.php";
                     }
                 } else if ($url == "seleccion") {
                     include "app/views/pages/seleccion_area/seleccion_area.php";
-                } else if ($url == "salir") {
-                    include "app/views/pages/salir/salir.php";
                 } else {
                     include "app/views/pages/errors/404.php";
                 }
@@ -88,10 +96,7 @@ if (isset($_SESSION["iniciarSesion"]) && $_SESSION["iniciarSesion"] == "ok") {
             include "app/views/pages/errors/404.php";
         }
     } else {
-
-        /*=============================================
-        CARGA POR DEFECTO (RAÍZ)
-        =============================================*/
+        // CARGA POR DEFECTO
         if ($perfilUsuario == "admin") {
             include "app/views/pages/inicio/inicio.php";
         } else {
