@@ -16,6 +16,7 @@ require_once __DIR__ . "/app/controllers/PreguntasController.php";
 require_once __DIR__ . "/app/controllers/RespuestasController.php";
 require_once __DIR__ . "/app/controllers/OpcionesRespuestasController.php";
 require_once __DIR__ . "/app/controllers/InicioController.php";
+require_once __DIR__ . "/app/controllers/OpcionesSubNivelesController.php";
 
 //* Mandamos a llamar Modelos
 require_once __DIR__ . "/app/models/UsuariosModel.php";
@@ -23,6 +24,7 @@ require_once __DIR__ . "/app/models/PreguntasModel.php";
 require_once __DIR__ . "/app/models/RespuestasModel.php";
 require_once __DIR__ . "/app/models/OpcionesRespuestaModel.php";
 require_once __DIR__ . "/app/models/InicioModel.php";
+require_once __DIR__ . "/app/models/OpcionesSubNivelesModel.php";
 
 //* Instanciamos el Template
 $template = new TemplateController();

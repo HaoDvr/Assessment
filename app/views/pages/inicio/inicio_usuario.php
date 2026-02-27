@@ -123,6 +123,7 @@ $entrevistadoActual = $_SESSION["entrevistado_actual"] ?? 'No definido';
                                         <?php
                                         $preguntas = PreguntasControlador::ctrMostrarPreguntas();
                                         $respuestas = OpcionesRespuestaControlador::ctrMostrarOpcionesRespuesta();
+                                        $respuestasSubNiveles = OpcionesSubNivelesController::ctrMostrarOpcionesSubNiveles();
                                         if (!is_array($preguntas)) $preguntas = [];
 
                                         $totalPreguntas = count($preguntas);
@@ -181,6 +182,32 @@ $entrevistadoActual = $_SESSION["entrevistado_actual"] ?? 'No definido';
                                                         <i class="fas fa-edit mr-1 text-primary"></i> Respuesta Detallada
                                                     </label>
                                                     <textarea class="form-control" id="libre_<?php echo $idPregunta; ?>" name="respuestas[<?php echo $idPregunta; ?>][libre]" required style="height: 120px; border-radius: 10px;"></textarea>
+                                                </div>
+
+                                                <div class="mb-4 text-left">
+                                                    <label class="text-secondary small fw-bold mb-2 ml-2 d-block">
+                                                        <i class="fas fa-chart-line mr-1 text-primary"></i> Grado de Frecuencia / Aplicación
+                                                    </label>
+
+                                                    <div class="d-flex flex-wrap justify-content-between">
+                                                        <?php foreach ($respuestasSubNiveles as $subNivel) :
+                                                            // Generamos un ID único combinando ID de pregunta + ID de sub-nivel
+                                                            $subId = "sub_" . $idPregunta . "_" . $subNivel["sub_niveles_id"];
+                                                        ?>
+                                                            <div class="form-check border shadow-sm mb-2" style="width: 49%; min-width: 250px;">
+
+                                                                <input class="form-check-input" type="radio"
+                                                                    name="respuestas[<?php echo $idPregunta; ?>][valor_sub_nivel]"
+                                                                    id="<?php echo $subId; ?>"
+                                                                    value="<?php echo $subNivel["valor_sub_nivel"]; ?>">
+
+                                                                <label class="form-check-label" for="<?php echo $subId; ?>">
+                                                                    <?php echo $subNivel["txt_sub_nivel"]; ?>
+                                                                </label>
+
+                                                            </div>
+                                                        <?php endforeach; ?>
+                                                    </div>
                                                 </div>
 
                                                 <div class="filtros-seleccion mb-4 p-3 border rounded shadow-sm bg-white" style="border-radius: 15px !important;">

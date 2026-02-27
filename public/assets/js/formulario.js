@@ -13,10 +13,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Inicialización inicial
     initSelect2(".select2");
 
-    // Limpiar borde rojo al cambiar Select2 (Usamos delegación para clones)
     $(document).on("change", ".select2", function () {
         $(this)
             .next(".select2-container")
@@ -27,7 +25,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("formularioMadurez");
     if (!form) return;
 
-    let pasoActual = 1;
     const btnSiguiente = document.getElementById("btnSiguiente");
     const btnAnterior = document.getElementById("btnAnterior");
     const btnSubmit = document.getElementById("btnSubmit");
@@ -36,7 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const progresoTexto = document.getElementById("progresoTexto");
 
     /*=============================================
-    2. LIMPIEZA DINÁMICA DE ERRORES
+    2. LIMPIEZA DINÁMICA DE ERRORES Y CAPTURA DE RADIOS
     =============================================*/
     form.addEventListener("input", function (event) {
         if (
@@ -51,17 +48,24 @@ document.addEventListener("DOMContentLoaded", function () {
         if (event.target.type === "radio") {
             const nameAttr = event.target.name;
             const match = nameAttr.match(/\[([^\]]+)\]/);
+
             if (match) {
                 const idPregunta = match[1];
                 const txtInput = document.getElementById("txt_" + idPregunta);
                 const valInput = document.getElementById("val_" + idPregunta);
-                if (txtInput)
-                    txtInput.value =
-                        event.target.getAttribute("data-texto") || "";
-                if (valInput)
-                    valInput.value =
-                        event.target.getAttribute("data-valor") || "";
+
+                // CAPTURA INTELIGENTE:
+                // Solo actualizamos si el radio tiene los atributos de la respuesta principal.
+                // Esto evita que los radios de "Sub-niveles" limpien el valor ya guardado.
+                const nuevoTexto = event.target.getAttribute("data-texto");
+                const nuevoValor = event.target.getAttribute("data-valor");
+
+                if (nuevoTexto !== null && nuevoValor !== null) {
+                    if (txtInput) txtInput.value = nuevoTexto;
+                    if (valInput) valInput.value = nuevoValor;
+                }
             }
+
             const grupo = event.target.closest(".grupo-opciones");
             if (grupo) {
                 const feedback = grupo.querySelector(".invalid-feedback");
@@ -110,14 +114,11 @@ document.addEventListener("DOMContentLoaded", function () {
             const actual = Array.from(paginas).find(
                 (p) => !p.classList.contains("d-none"),
             );
-
             if (!actual) return;
 
-            // 1. CAPTURA DE VALORES ORIGINALES
             const valorDominio = $(actual).find(".select-dominio").val();
             const valorServicio = $(actual).find(".select-servicio").val();
 
-            // 2. CLONACIÓN
             const clon = actual.cloneNode(true);
             const idOriginal = actual.getAttribute("data-id-original");
             const nuevoId = idOriginal + "_copy_" + Date.now();
@@ -126,26 +127,18 @@ document.addEventListener("DOMContentLoaded", function () {
             clon.classList.add("d-none");
             clon.setAttribute("data-id-original", nuevoId);
 
-            // 3. LIMPIEZA PROFUNDA DE SELECT2 EN EL CLON
-            // Eliminamos el contenedor visual que copió el cloneNode
             $(clon).find(".select2-container").remove();
-
             const selectsClon = $(clon).find(".select2");
             selectsClon.each(function () {
-                // Truco Senior: Eliminamos los IDs internos de las opciones y del select
                 $(this)
                     .removeClass("select2-hidden-accessible")
                     .removeAttr("data-select2-id")
                     .removeAttr("aria-hidden");
-
                 $(this).find("option").removeAttr("data-select2-id");
-
-                // Limpiar el rastro de jQuery Data para que Select2 crea que es nuevo
                 $(this).removeData("select2");
                 $(this).val(null);
             });
 
-            // 4. AJUSTE DE NOMBRES E IDS
             $(clon)
                 .find("input, textarea, select")
                 .each(function () {
@@ -155,7 +148,6 @@ document.addEventListener("DOMContentLoaded", function () {
                             `[${nuevoId}]`,
                         );
                     if (this.id) this.id = this.id.replace(idOriginal, nuevoId);
-
                     if (this.type !== "hidden" && !$(this).hasClass("select2"))
                         this.value = "";
                     if (this.type === "radio" || this.type === "checkbox")
@@ -173,13 +165,9 @@ document.addEventListener("DOMContentLoaded", function () {
                         );
                 });
 
-            // 5. INSERTAR E INICIALIZAR
             actual.after(clon);
-
-            // Inicializamos el Select2 del clon (ahora sí está limpio)
             initSelect2($(clon).find(".select2"));
 
-            // 6. RE-APLICAR VALORES (Si se desea heredar)
             if (valorDominio)
                 $(clon)
                     .find(".select-dominio")
@@ -194,70 +182,124 @@ document.addEventListener("DOMContentLoaded", function () {
             Swal.fire({
                 icon: "success",
                 title: "Pregunta Duplicada",
-                text: "Copia funcional creada.",
                 timer: 1500,
                 showConfirmButton: false,
             });
-
             actualizarInterfaz();
         });
     }
 
     /*=============================================
-    4. NAVEGACIÓN Y VALIDACIÓN
+    4. NAVEGACIÓN Y ESCÁNER DE VALIDACIÓN
     =============================================*/
-    function validarPasoActual() {
-        const paginas = document.querySelectorAll(".pagina-encuesta");
-        const visible = Array.from(paginas).find(
-            (p) => !p.classList.contains("d-none"),
-        );
-        let esValido = true;
-        let mensaje = "";
 
-        const skip = visible.querySelector(".chk-no-responde");
-        if (skip && skip.checked) {
-            visible
-                .querySelectorAll(".area-reasignar [required]")
-                .forEach((el) => {
-                    if (el.value.trim() === "") {
-                        esValido = false;
+    function validarFormulario(validarTodo = false) {
+        const paginas = document.querySelectorAll(".pagina-encuesta");
+        const paginasAProcesar = validarTodo
+            ? Array.from(paginas)
+            : [
+                  Array.from(paginas).find(
+                      (p) => !p.classList.contains("d-none"),
+                  ),
+              ];
+
+        let todoValido = true;
+        let primerPasoConError = null;
+
+        paginasAProcesar.forEach((pagina, index) => {
+            let errorEnEstaPagina = false;
+            const skip = pagina.querySelector(".chk-no-responde");
+
+            if (skip && skip.checked) {
+                pagina
+                    .querySelectorAll(".area-reasignar [required]")
+                    .forEach((el) => {
+                        if (el.value.trim() === "") {
+                            todoValido = false;
+                            errorEnEstaPagina = true;
+                            el.classList.add("is-invalid");
+                        }
+                    });
+            } else {
+                pagina.querySelectorAll("[required]").forEach((el) => {
+                    if (el.tagName === "SELECT") {
+                        if (!$(el).val() || $(el).val().length === 0) {
+                            todoValido = false;
+                            errorEnEstaPagina = true;
+                            $(el)
+                                .next()
+                                .find(".select2-selection")
+                                .css("border", "1px solid #dc3545");
+                        }
+                    } else if (el.type === "radio") {
+                        const name = el.name;
+                        // Solo validamos si es el radio de la respuesta principal (no el sub-nivel opcional)
+                        if (name.includes("[id_seleccionada]")) {
+                            if (
+                                !pagina.querySelector(
+                                    `input[name="${name}"]:checked`,
+                                )
+                            ) {
+                                todoValido = false;
+                                errorEnEstaPagina = true;
+                                pagina.querySelector(
+                                    ".feedback-radio",
+                                ).style.display = "block";
+                            }
+                        }
+                    } else if (el.value.trim() === "") {
+                        todoValido = false;
+                        errorEnEstaPagina = true;
                         el.classList.add("is-invalid");
-                        mensaje =
-                            "Los campos de reasignación son obligatorios.";
                     }
                 });
-        } else {
-            visible.querySelectorAll("[required]").forEach((el) => {
-                if (el.tagName === "SELECT") {
-                    if (!$(el).val() || $(el).val().length === 0) {
-                        esValido = false;
-                        mensaje = "Selecciona Dominio y Servicio.";
-                        $(el)
-                            .next()
-                            .find(".select2-selection")
-                            .css("border", "1px solid #dc3545");
-                    }
-                } else if (el.type === "radio") {
-                    const name = el.name;
-                    if (
-                        !visible.querySelector(`input[name="${name}"]:checked`)
-                    ) {
-                        esValido = false;
-                        mensaje = "Selecciona una opción de respuesta.";
-                        visible.querySelector(".feedback-radio").style.display =
-                            "block";
-                    }
-                } else if (el.value.trim() === "") {
-                    esValido = false;
-                    el.classList.add("is-invalid");
-                    mensaje = "La respuesta detallada es obligatoria.";
-                }
-            });
-        }
+            }
 
-        if (!esValido) Swal.fire("Atención", mensaje, "warning");
-        return esValido;
+            if (errorEnEstaPagina && primerPasoConError === null) {
+                primerPasoConError = index;
+            }
+        });
+
+        if (!todoValido) {
+            Swal.fire(
+                "Atención",
+                "Te faltan campos por contestar. Te regresaremos a la pregunta pendiente.",
+                "warning",
+            );
+
+            if (validarTodo && primerPasoConError !== null) {
+                paginas.forEach((p) => p.classList.add("d-none"));
+                paginas[primerPasoConError].classList.remove("d-none");
+                actualizarInterfaz();
+            }
+        }
+        return todoValido;
     }
+
+    btnSiguiente.addEventListener("click", () => {
+        const paginas = document.querySelectorAll(".pagina-encuesta");
+        let index = Array.from(paginas).findIndex(
+            (p) => !p.classList.contains("d-none"),
+        );
+        if (index < paginas.length - 1) {
+            paginas[index].classList.add("d-none");
+            paginas[index + 1].classList.remove("d-none");
+            actualizarInterfaz();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    });
+
+    btnAnterior.addEventListener("click", () => {
+        const paginas = document.querySelectorAll(".pagina-encuesta");
+        let index = Array.from(paginas).findIndex(
+            (p) => !p.classList.contains("d-none"),
+        );
+        if (index > 0) {
+            paginas[index].classList.add("d-none");
+            paginas[index - 1].classList.remove("d-none");
+            actualizarInterfaz();
+        }
+    });
 
     function actualizarInterfaz() {
         const paginas = document.querySelectorAll(".pagina-encuesta");
@@ -282,34 +324,9 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    btnSiguiente.addEventListener("click", () => {
-        if (validarPasoActual()) {
-            const paginas = document.querySelectorAll(".pagina-encuesta");
-            let index = Array.from(paginas).findIndex(
-                (p) => !p.classList.contains("d-none"),
-            );
-            paginas[index].classList.add("d-none");
-            paginas[index + 1].classList.remove("d-none");
-            actualizarInterfaz();
-            window.scrollTo({ top: 0, behavior: "smooth" });
-        }
-    });
-
-    btnAnterior.addEventListener("click", () => {
-        const paginas = document.querySelectorAll(".pagina-encuesta");
-        let index = Array.from(paginas).findIndex(
-            (p) => !p.classList.contains("d-none"),
-        );
-        if (index > 0) {
-            paginas[index].classList.add("d-none");
-            paginas[index - 1].classList.remove("d-none");
-            actualizarInterfaz();
-        }
-    });
-
     form.addEventListener("submit", function (e) {
         e.preventDefault();
-        if (validarPasoActual()) {
+        if (validarFormulario(true)) {
             const datos = new FormData(form);
             $.ajax({
                 url: "app/ajax/enviaFormulario.ajax.php",
