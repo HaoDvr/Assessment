@@ -1,18 +1,11 @@
-# 1. Directivas de Opciones
-# Deshabilita la navegación por directorios y la vista múltiple
-Options -Indexes -Multiviews
+# 1. Configuración de motor
+RewriteEngine On
+# Define la raíz del proyecto (Si está en la raíz, solo es /)
+RewriteBase /
 
-# **IMPORTANTE: Las siguientes dos líneas evitan el problema**
-# No reescribir si la solicitud es un archivo que existe (-f = file)
+# 2. Excepciones: No reescribir si el archivo o carpeta existen físicamente
 RewriteCond %{REQUEST_FILENAME} !-f
-# No reescribir si la solicitud es un directorio que existe (-d = directory)
 RewriteCond %{REQUEST_FILENAME} !-d
 
-# 2. Configuración de Reescribir URLs (URL Rewriting)
-# Activa el motor de reescritura
-RewriteEngine On
-
-# Regla de Reescritura:
-# Captura cualquier ruta (letras, números, guiones, barras)
-# y lo envía a index.php como el parámetro 'url'
+# 3. Regla de Reescritura
 RewriteRule ^(.*)$ index.php?url=$1 [L,QSA]
